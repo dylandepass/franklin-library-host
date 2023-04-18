@@ -24,7 +24,7 @@ function getFilteredTags(data, query) {
   return data.filter(item => item.tag.toLowerCase().includes(query.toLowerCase()));
 }
 
-async function decorate(container, data, query) {
+export async function decorate(container, data, query) {
   const sp = document.createElement('div');
   sp.classList.add('container');
   sp.innerHTML = /* html */`
@@ -78,5 +78,4 @@ async function decorate(container, data, query) {
 export default {
   title: 'Taxonomy',
   searchEnabled: true,
-  decorate,
 };
