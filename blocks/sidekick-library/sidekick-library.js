@@ -3,7 +3,7 @@ import { readBlockConfig } from '../../scripts/lib-franklin.js';
 
 export default function decorate(block) {
   const blockConfig = readBlockConfig(block);
-  const library = document.createElement('franklin-library');
+  const library = document.createElement('sidekick-library');
 
   block.replaceChildren(library);
 }
