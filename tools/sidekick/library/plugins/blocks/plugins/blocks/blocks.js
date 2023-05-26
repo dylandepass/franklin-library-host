@@ -24,7 +24,6 @@ import {
 import {
   createSideNavItem, createTag,
 } from '../../utils/dom.js';
-import { APP_EVENTS } from '../../events/events.js';
 
 // The currently active block element
 let activeBlockElement;
@@ -301,7 +300,7 @@ export async function decorate(container, data, query) {
         true,
         'sp-icon-preview',
       );
-      blockParentItem.addEventListener(APP_EVENTS.ON_ACTION, e => onPreview(e, blockPath));
+      blockParentItem.addEventListener('OnAction', e => onPreview(e, blockPath));
       sideNav.append(blockParentItem);
 
       // Get the body container of the block variants
@@ -340,7 +339,7 @@ export async function decorate(container, data, query) {
         );
         blockVariantItem.classList.add('descendant');
         blockVariantItem.setAttribute('data-index', index);
-        blockVariantItem.addEventListener(APP_EVENTS.ON_ACTION, (e) => {
+        blockVariantItem.addEventListener('OnAction', (e) => {
           e.preventDefault();
           e.stopPropagation();
           copyBlock(blockElement, blockNameWithVariant, blockPath);
