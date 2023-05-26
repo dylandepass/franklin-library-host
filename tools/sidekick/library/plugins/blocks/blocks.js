@@ -10,109 +10,34 @@
  * governing permissions and limitations under the License.
  */
 
-/* eslint-disable no-await-in-loop, no-param-reassign, consistent-return */
+/* eslint-disable no-await-in-loop, no-param-reassign, consistent-return, no-plusplus */
 
-import { createCopy, createTag, getMetadata } from '../../utils/dom.js';
+import { Overlay } from '@spectrum-web-components/overlay';
+import {
+  copyBlock,
+  fetchBlock,
+  getBlockName,
+  getDefaultLibraryMetadata,
+  getLibraryMetadata,
+  isMatchingBlock,
+  parseDescription,
+} from './utils.js';
+import {
+  createSideNavItem, createTag,
+} from '../../utils/dom.js';
+import { APP_EVENTS } from '../../events/events.js';
 
-function getAuthorName(block) {
-  const authorNameTags = ['H2', 'H3'];
-  const blockSib = block.previousElementSibling;
-  if (!blockSib) return null;
-  if (authorNameTags.includes(blockSib.nodeName)) {
-    return blockSib.textContent;
-  }
-  const nextSib = blockSib.previousElementSibling;
-  if (!nextSib) return null;
-  if (authorNameTags.includes(nextSib.nodeName)) {
-    return nextSib.textContent;
-  }
-
-  return null;
-}
-
-function getBlockDescription(block) {
-  const descriptionTag = 'P';
-  const blockSib = block.previousElementSibling;
-  if (!blockSib) return null;
-  if (blockSib.nodeName === descriptionTag) {
-    return blockSib.textContent;
-  }
-  return null;
-}
-
-function getBlockName(block) {
-  const classes = block.className.split(' ');
-  const name = classes.shift();
-  return classes.length > 0 ? `${name} (${classes.join(', ')})` : name;
-}
-
-function getTable(block, name, path) {
-  const url = new URL(path);
-  block.querySelectorAll('img').forEach((img) => {
-    const srcSplit = img.src.split('/');
-    const mediaPath = srcSplit.pop();
-    img.src = `${url.origin}/${mediaPath}`;
-    const { width, height } = img;
-    const ratio = width > 200 ? 200 / width : 1;
-    img.width = width * ratio;
-    img.height = height * ratio;
-  });
-  const rows = [...block.children];
-  const maxCols = rows.reduce(
-    (cols, row) => (row.children.length > cols ? row.children.length : cols),
-    0,
-  );
-  const table = document.createElement('table');
-  table.setAttribute('border', '1');
-
-  const backgroundColor = getComputedStyle(document.documentElement)
-    .getPropertyValue('--sk-table-bg-color') || '#ff8012';
-
-  const foregroundColor = getComputedStyle(document.documentElement)
-    .getPropertyValue('--sk-table-fg-color') || '#ffffff';
-
-  const headerRow = document.createElement('tr');
-  headerRow.append(createTag('td', { colspan: maxCols, style: `background-color: ${backgroundColor}; color: ${foregroundColor};  height:23px;` }, name));
-  table.append(headerRow);
-  rows.forEach((row) => {
-    const tr = document.createElement('tr');
-    [...row.children].forEach((col) => {
-      const td = document.createElement('td');
-      if (row.children.length < maxCols) {
-        td.setAttribute('colspan', maxCols);
-      }
-      td.innerHTML = col.innerHTML;
-      tr.append(td);
-    });
-    table.append(tr);
-  });
-  return table.outerHTML;
-}
-
-function getBlockTags(block) {
-  const blockName = getAuthorName(block) || getBlockName(block);
-  if (block.nextElementSibling?.className !== 'library-metadata') {
-    return blockName;
-  }
-  const libraryMetadata = getMetadata(block.nextElementSibling);
-  return libraryMetadata?.searchtags?.text
-    ? `${libraryMetadata?.searchtags?.text} ${blockName}`
-    : blockName;
-}
-
-function isMatchingBlock(pageBlock, query) {
-  const tagsString = getBlockTags(pageBlock);
-  if (!query || !tagsString) return false;
-  const searchTokens = query.split(' ');
-  return searchTokens.every(token => tagsString.toLowerCase().includes(token.toLowerCase()));
-}
+// The currently active block element
+let activeBlockElement;
+let activeOverlayContent;
+let selectedElement;
+let iframeFocused = false;
 
 function renderNoResults() {
   return /* html */`
     <div class="message-container">
         <sp-illustrated-message
         heading="No results"
-        description="Try another search"
         >
             <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -130,26 +55,208 @@ function renderNoResults() {
     `;
 }
 
-export async function fetchBlock(path) {
-  if (!window.blocks) {
-    window.blocks = {};
-  }
-  if (!window.blocks[path]) {
-    const resp = await fetch(`${path}.plain.html`);
-    if (!resp.ok) return;
-
-    const html = await resp.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    window.blocks[path] = doc;
-  }
-
-  return window.blocks[path];
-}
-
 function onPreview(event, path) {
   event.stopPropagation();
   window.open(path, '_blockpreview');
+}
+
+function renderScaffolding() {
+  return /* html */`
+    <sp-split-view 
+        primary-size="350" 
+        dir="ltr" 
+        splitter-pos="250"
+        resizable
+      >
+      <div class="menu">
+        <div class="search">
+          <sp-search></sp-search>
+        </div>
+      </div>
+      <div class="content">
+        <sp-split-view
+          vertical
+          resizable
+          primary-size="2600"
+          secondary-min="200"
+          splitter-pos="250"
+        >
+          <div class="view">
+            <div class="action-bar">
+              <sp-action-group compact emphasized selects="single" selected="desktop">
+                <sp-action-button value="mobile">
+                    <sp-icon-device-phone slot="icon"></sp-icon-device-phone>
+                    Mobile
+                </sp-action-button>
+                <sp-action-button value="tablet">
+                    <sp-icon-device-tablet slot="icon"></sp-icon-device-tablet>
+                    Tablet
+                </sp-action-button>
+                <sp-action-button value="desktop">
+                    <sp-icon-device-desktop slot="icon"></sp-icon-device-desktop>
+                    Desktop
+                </sp-action-button>
+              </sp-action-group>
+              <sp-divider size="s"></sp-divider>
+            </div>
+            <div class="frame-view">
+              <iframe></iframe>
+            </div>
+          </div>
+          <div class="details-container">
+            <div class="action-bar">
+              <h3 class="block-title"></h3>
+              <div class="actions">
+                  <sp-action-button class="copy-button">Copy Block</sp-action-button>
+              </div>
+            </div>
+            <sp-divider size="s"></sp-divider>
+            <div class="details"></div>
+          </div>
+        </sp-split-view>
+      </div>
+    </sp-split-view>
+  `;
+}
+
+function handleMutations(mutations) {
+  mutations.forEach((mutation) => {
+    if (mutation.type === 'attributes') {
+      if (mutation.attributeName === 'src') {
+        const modifiedImgId = mutation.target.getAttribute('data-library-id');
+        const modifiedEleemnt = activeBlockElement.querySelector(`[data-library-id="${modifiedImgId}"]`);
+        modifiedEleemnt.src = mutation.target.src;
+        modifiedEleemnt.width = mutation.target.width;
+        modifiedEleemnt.height = mutation.target.height;
+      }
+    } else if (mutation.type === 'characterData') {
+      const modifiedTextId = mutation.target.parentElement.getAttribute('data-library-id');
+      const modifiedEleemnt = activeBlockElement.querySelector(`[data-library-id="${modifiedTextId}"]`);
+      if (modifiedEleemnt) {
+        // console.log('old', mutation.oldValue);
+        // console.log('new', mutation.target.nodeValue);
+      }
+      modifiedEleemnt.innerHTML = mutation.target.parentElement.innerHTML;
+    } else if (mutation.type === 'childList') {
+      if (mutation.addedNodes.length > 0) {
+        const modifiedTextId = mutation.target.getAttribute('data-library-id');
+        const modifiedEleemnt = activeBlockElement.querySelector(`[data-library-id="${modifiedTextId}"]`);
+        modifiedEleemnt.replaceChildren();
+        for (const child of mutation.addedNodes) {
+          const clonedContent = child.cloneNode(true);
+          modifiedEleemnt.textContent = clonedContent.textContent;
+        }
+      }
+    }
+  });
+}
+
+function disableContentEditable(up, twoup) {
+  up.removeAttribute('contentEditable');
+  up.removeAttribute('data-library-id');
+
+  if (twoup) {
+    twoup.removeAttribute('contentEditable');
+    twoup.removeAttribute('data-library-id');
+  }
+}
+
+function decorateEditableElements(block) {
+  [...block.querySelectorAll('p, strong, a, h1, h2, h3, h4, h5, h6')].forEach((el) => {
+    el.setAttribute('contentEditable', true);
+    el.setAttribute('data-library-id', window.crypto.randomUUID());
+  });
+
+  [...block.querySelectorAll('a')].forEach((el) => {
+    const up = el.parentElement;
+    const twoup = el.parentElement.parentElement;
+
+    const isUpSingleNodeP = up.childNodes.length === 1 && up.tagName === 'P';
+    const isTwoUpSingleNodeP = twoup.childNodes.length === 1 && twoup.tagName === 'P';
+    const isTwoUpSingleNodeDiv = twoup.childNodes.length === 1 && twoup.tagName === 'DIV';
+    const isUpSingleNodeStrong = up.childNodes.length === 1 && up.tagName === 'STRONG';
+    const isUpSingleNodeEm = up.childNodes.length === 1 && up.tagName === 'EM';
+
+    if (isUpSingleNodeP
+      || (isTwoUpSingleNodeP && isUpSingleNodeStrong)
+      || (isTwoUpSingleNodeDiv && isUpSingleNodeP)
+      || (isTwoUpSingleNodeP && isUpSingleNodeEm)) {
+      disableContentEditable(up, twoup);
+    }
+  });
+
+  [...block.querySelectorAll('img')].forEach((el) => {
+    el.setAttribute('data-library-id', window.crypto.randomUUID());
+  });
+}
+
+function enableImageDragDrop(body) {
+  [...body.querySelectorAll('source')].forEach((el) => {
+    el.remove();
+  });
+
+  [...body.querySelectorAll('img')].forEach((el) => {
+    el.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    el.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    el.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+
+      reader.addEventListener('loadend', () => {
+        const image = new Image();
+        image.src = reader.result;
+        image.addEventListener('load', () => {
+          el.setAttribute('width', image.width);
+          el.setAttribute('height', image.height);
+        });
+        el.src = reader.result;
+      });
+    });
+  });
+}
+
+async function decorateBlock(name, blockData, blockElement) {
+  const { origin } = new URL(blockData.path);
+  const { default: defaultDecorate } = await import(`${origin}/blocks/${name}/${name}.js`);
+  const {
+    decorateSections,
+    decorateButtons,
+    decorateBlock: libFranklinDecorateBlock,
+    updateSectionsStatus,
+  } = await import(`${origin}/scripts/lib-franklin.js`);
+
+  const main = createTag('main', {}, blockElement);
+
+  // Decorate any buttons
+  decorateButtons(main);
+
+  // Prepare the sections
+  decorateSections(main);
+
+  // Get the block
+  const block = main.querySelector(`.${name}`);
+
+  // Prepare the block for decoration
+  libFranklinDecorateBlock(block);
+
+  // Decorate the block
+  await defaultDecorate(block);
+
+  // Set block as loaded
+  block.dataset.blockStatus = 'loaded';
+
+  // Set section as loaded
+  updateSectionsStatus(main);
+
+  return main.querySelector('.section');
 }
 
 /**
@@ -160,57 +267,271 @@ function onPreview(event, path) {
  */
 export async function decorate(container, data, query) {
   container.dispatchEvent(new CustomEvent('ShowLoader'));
+
+  const content = createTag('div', { class: 'block-library' }, renderScaffolding());
+  const menu = content.querySelector('.menu');
+  const details = content.querySelector('.details');
+  const blockTitle = content.querySelector('.block-title');
+  const copyButton = content.querySelector('.copy-button');
+
   const sideNav = createTag('sp-sidenav', { variant: 'multilevel', 'data-testid': 'blocks' });
-  for (const block of data) {
-    const blockVariant = createTag('sp-sidenav-item', { label: block.name, preview: true });
-    sideNav.append(blockVariant);
+  menu.append(sideNav);
 
-    blockVariant.addEventListener('Preview', e => onPreview(e, block.path));
+  const actionGroup = content.querySelector('sp-action-group');
+  actionGroup.selected = 'desktop';
 
-    const doc = await fetchBlock(block.path);
-    const pageBlocks = doc.body.querySelectorAll('div[class]');
+  // Create an array of promises for each block
+  const promises = data.map(async (blockData) => {
+    const { path: blockPath } = blockData;
+    const docPromise = fetchBlock(blockPath); // Store the promise
 
-    pageBlocks.forEach((pageBlock) => {
-      // don't display the library-metadata block used to set the block search tags
-      if (pageBlock.className === 'library-metadata') {
-        return;
-      }
-      const blockName = getAuthorName(pageBlock) || getBlockName(pageBlock);
-      const blockDescription = getBlockDescription(pageBlock);
-
-      const childNavItem = createTag('sp-sidenav-item', { label: blockName, 'data-testid': 'item' });
-      blockVariant.append(childNavItem);
-
-      if (blockDescription) {
-        childNavItem.setAttribute('data-info', blockDescription);
+    try {
+      const res = await docPromise;
+      if (!res) {
+        throw new Error(`An error occurred fetching ${blockData.name}`);
       }
 
-      childNavItem.addEventListener('click', () => {
-        const table = getTable(pageBlock, getBlockName(pageBlock), block.path);
-        const blob = new Blob([table], { type: 'text/html' });
-        createCopy(blob);
+      // Add block parent sidenav item
+      const blockParentItem = createSideNavItem(
+        blockData.name,
+        'sp-icon-file-template',
+        true,
+        true,
+        'sp-icon-preview',
+      );
+      blockParentItem.addEventListener(APP_EVENTS.ON_ACTION, e => onPreview(e, blockPath));
+      sideNav.append(blockParentItem);
 
-        // Show toast
-        container.dispatchEvent(new CustomEvent('Toast', { detail: { message: 'Copied Block' } }));
+      // Get the body container of the block variants
+      const { body } = res;
+
+      // Check for default library metadata
+      const defaultLibraryMetadata = getDefaultLibraryMetadata(body);
+
+      // Query all variations of the block in the container
+      const pageBlocks = [...body.querySelectorAll(':scope > div')];
+
+      pageBlocks.forEach((pageBlock, index) => {
+        // Check if the variation has library metadata
+        const sectionLibraryMetadata = getLibraryMetadata(pageBlock) ?? {};
+        const blockElement = pageBlock.querySelector('div[class]');
+        const blockName = getBlockName(blockElement, false);
+        const blockNameWithVariant = sectionLibraryMetadata.name ?? getBlockName(blockElement);
+
+        if (!blockName) {
+          return;
+        }
+
+        // Pull the description for this block,
+        // first from sectionLibraryMetadata and fallback to defaultLibraryMetadata
+        const { description: sectionDescription } = sectionLibraryMetadata;
+        const blockDescription = sectionDescription
+          ? parseDescription(sectionDescription)
+          : parseDescription(defaultLibraryMetadata.description);
+
+        const blockVariantItem = createSideNavItem(
+          blockNameWithVariant,
+          'sp-icon-file-code',
+          false,
+          true,
+          'sp-icon-copy',
+        );
+        blockVariantItem.classList.add('descendant');
+        blockVariantItem.setAttribute('data-index', index);
+        blockVariantItem.addEventListener(APP_EVENTS.ON_ACTION, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          copyBlock(blockElement, blockNameWithVariant, blockPath);
+
+          // Show toast
+          container.dispatchEvent(new CustomEvent('Toast', { detail: { message: 'Copied Block' } }));
+        });
+
+        // Add child variant to parent
+        blockParentItem.append(blockVariantItem);
+
+        const myObserver = new MutationObserver(handleMutations);
+
+        blockVariantItem.addEventListener('click', async () => {
+          // Decorate the block with ids
+          decorateEditableElements(pageBlock);
+
+          // Clone the block and decorate it
+          const blockClone = pageBlock.cloneNode(true);
+          const wrappedBlock = await decorateBlock(blockName, blockData, blockClone);
+
+          // Store the active block
+          activeBlockElement = blockElement;
+
+          // Set block title
+          blockTitle.textContent = blockNameWithVariant;
+
+          // Disable enter key on contenteditable
+          [...blockClone.querySelectorAll('p, strong, a, h1, h2, h3, h4, h5, h6')].forEach((el) => {
+            el.addEventListener('keydown', (e) => { if (e.keyCode === 13) e.preventDefault(); });
+            el.addEventListener('focus', (e) => {
+              selectedElement = e.target;
+              const trigger = container;
+              const boundingRect = e.target.getBoundingClientRect();
+              const interaction = 'click';
+
+              activeOverlayContent = createTag('generative-text-popover', {});
+              activeOverlayContent.style.top = `${boundingRect.top + boundingRect.height + 115}px`;
+              activeOverlayContent.style.left = `${boundingRect.left + boundingRect.width + frame.getBoundingClientRect().left - 36}px`;
+              activeOverlayContent.style.position = 'absolute';
+
+              activeOverlayContent.addEventListener('generated', (response) => {
+                activeOverlayContent.open = false;
+                selectedElement.innerHTML = response.detail.generated;
+                activeOverlayContent.remove();
+              });
+
+              activeOverlayContent.addEventListener('error', (error) => {
+                activeOverlayContent.open = false;
+                container.dispatchEvent(new CustomEvent('Toast', { detail: { message: error.detail.message, variant: 'negative' } }));
+              });
+
+              if (!activeOverlayContent) return;
+              const options = {
+                placement: 'none',
+              };
+              activeOverlayContent.open = true;
+              Overlay.open(
+                trigger,
+                interaction,
+                activeOverlayContent,
+                options,
+              );
+            });
+
+            el.addEventListener('focusout', (e) => {
+              if (e.relatedTarget) {
+                if (activeOverlayContent) {
+                  activeOverlayContent.closest('active-overlay').remove();
+                }
+              } else {
+                setTimeout(() => {
+                  if (document.activeElement?.tagName !== 'GENERATIVE-TEXT-POPOVER' || document.activeElement?.tagName === 'SIDEKICK-LIBRARY') {
+                    if (activeOverlayContent) {
+                      activeOverlayContent.closest('active-overlay').remove();
+                    }
+                  }
+                }, 100);
+              }
+            });
+          });
+
+          // Set block description
+          details.innerHTML = '';
+          if (blockDescription) {
+            const description = createTag('p', {}, blockDescription);
+            details.append(description);
+          }
+
+          const frame = container.querySelector('iframe');
+          frame.src = blockPath;
+          frame?.addEventListener('load', () => {
+            const { body: iframeBody } = frame.contentWindow.document;
+            iframeBody.querySelector('header')?.remove();
+            iframeBody.querySelector('footer')?.remove();
+            iframeBody.querySelector('main')?.replaceChildren(wrappedBlock);
+
+            frame.contentDocument.addEventListener('scroll', () => {
+              if (activeOverlayContent) {
+                activeOverlayContent.remove();
+              }
+
+              if (selectedElement) {
+                selectedElement.blur();
+              }
+            });
+
+            const iframeWindow = frame.contentWindow;
+            iframeWindow.addEventListener('focus', () => {
+              console.log('iframe focused');
+              iframeFocused = true;
+              if (activeOverlayContent) {
+                activeOverlayContent.remove();
+              }
+            });
+            iframeWindow.addEventListener('blur', () => {
+              console.log('iframe blurred');
+              iframeFocused = false;
+            });
+
+            enableImageDragDrop(iframeBody);
+
+            myObserver.observe(wrappedBlock, {
+              subtree: true,
+              attributes: true,
+              childList: true,
+              characterData: true,
+              characterDataOldValue: true,
+            });
+
+            const { origin } = new URL(blockPath);
+            const styleLink = createTag('link', { rel: 'stylesheet', href: `${origin}/blocks/${blockName}/${blockName}.css` });
+            frame.contentWindow.document.head.append(styleLink);
+            styleLink.onload = () => {
+              frame.style.display = 'block';
+            };
+            styleLink.onerror = (e) => {
+              // eslint-disable-next-line no-console
+              console.error(e);
+            };
+
+            copyButton?.addEventListener('click', () => {
+              copyBlock(activeBlockElement, blockNameWithVariant, blockPath);
+
+              // Show toast
+              container.dispatchEvent(new CustomEvent('Toast', { detail: { message: 'Copied Block' } }));
+            });
+          });
+        });
+
+        if (query) {
+          if (isMatchingBlock(pageBlock, query)) {
+            blockParentItem.setAttribute('expanded', true);
+          } else {
+            blockParentItem.removeChild(blockVariantItem);
+          }
+        }
       });
 
-      if (query) {
-        if (isMatchingBlock(pageBlock, query)) {
-          blockVariant.setAttribute('expanded', true);
-        } else {
-          blockVariant.removeChild(childNavItem);
-        }
+      // Is we are searching and no blockVariants matched, remove the block
+      if (query && !blockParentItem.getAttribute('expanded')) {
+        blockParentItem.remove();
       }
-    });
 
-    // Is we are searching and no blockVariants matched, remove the block
-    if (query && !blockVariant.getAttribute('expanded')) {
-      blockVariant.remove();
+      return docPromise; // Return the promise
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e.message);
+      container.dispatchEvent(new CustomEvent('Toast', { detail: { message: e.message, variant: 'negative' } }));
     }
-  }
+  });
+
+  // Wait for all promises to resolve
+  await Promise.all(promises);
+
+  const frameView = content.querySelector('.frame-view');
+  const mobileViewButton = content.querySelector('sp-action-button[value="mobile"]');
+  mobileViewButton?.addEventListener('click', () => {
+    frameView.style.width = '480px';
+  });
+
+  const tabletViewButton = content.querySelector('sp-action-button[value="tablet"]');
+  tabletViewButton?.addEventListener('click', () => {
+    frameView.style.width = '768px';
+  });
+
+  const desktopViewButton = content.querySelector('sp-action-button[value="desktop"]');
+  desktopViewButton?.addEventListener('click', () => {
+    frameView.style.width = '100%';
+  });
 
   // Show blocks and hide loader
-  container.append(sideNav);
+  container.append(content);
   container.dispatchEvent(new CustomEvent('HideLoader'));
 
   if (sideNav.querySelectorAll('sp-sidenav-item').length === 0) {
@@ -220,5 +541,5 @@ export async function decorate(container, data, query) {
 
 export default {
   title: 'Blocks',
-  searchEnabled: true,
+  searchEnabled: false,
 };
