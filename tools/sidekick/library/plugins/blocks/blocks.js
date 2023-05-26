@@ -12,7 +12,6 @@
 
 /* eslint-disable no-await-in-loop, no-param-reassign, consistent-return, no-plusplus */
 
-import { Overlay } from '@spectrum-web-components/overlay';
 import {
   copyBlock,
   fetchBlock,
@@ -32,6 +31,7 @@ let activeBlockElement;
 let activeOverlayContent;
 let selectedElement;
 let iframeFocused = false;
+let blockContainer;
 
 function renderNoResults() {
   return /* html */`
@@ -280,6 +280,8 @@ export async function decorate(container, data, query) {
   const actionGroup = content.querySelector('sp-action-group');
   actionGroup.selected = 'desktop';
 
+  blockContainer = container;
+
   // Create an array of promises for each block
   const promises = data.map(async (blockData) => {
     const { path: blockPath } = blockData;
@@ -371,12 +373,10 @@ export async function decorate(container, data, query) {
             el.addEventListener('keydown', (e) => { if (e.keyCode === 13) e.preventDefault(); });
             el.addEventListener('focus', (e) => {
               selectedElement = e.target;
-              const trigger = container;
               const boundingRect = e.target.getBoundingClientRect();
-              const interaction = 'click';
 
               activeOverlayContent = createTag('generative-text-popover', {});
-              activeOverlayContent.style.top = `${boundingRect.top + boundingRect.height + 115}px`;
+              activeOverlayContent.style.top = `${boundingRect.top + boundingRect.height + 63}px`;
               activeOverlayContent.style.left = `${boundingRect.left + boundingRect.width + frame.getBoundingClientRect().left - 36}px`;
               activeOverlayContent.style.position = 'absolute';
 
@@ -391,29 +391,19 @@ export async function decorate(container, data, query) {
                 container.dispatchEvent(new CustomEvent('Toast', { detail: { message: error.detail.message, variant: 'negative' } }));
               });
 
-              if (!activeOverlayContent) return;
-              const options = {
-                placement: 'none',
-              };
-              activeOverlayContent.open = true;
-              Overlay.open(
-                trigger,
-                interaction,
-                activeOverlayContent,
-                options,
-              );
+              container.append(activeOverlayContent);
             });
 
             el.addEventListener('focusout', (e) => {
               if (e.relatedTarget) {
                 if (activeOverlayContent) {
-                  activeOverlayContent.closest('active-overlay').remove();
+                  blockContainer.querySelector('generative-text-popover').remove();
                 }
               } else {
                 setTimeout(() => {
                   if (document.activeElement?.tagName !== 'GENERATIVE-TEXT-POPOVER' || document.activeElement?.tagName === 'SIDEKICK-LIBRARY') {
                     if (activeOverlayContent) {
-                      activeOverlayContent.closest('active-overlay').remove();
+                      blockContainer.querySelector('generative-text-popover').remove();
                     }
                   }
                 }, 100);
@@ -448,14 +438,12 @@ export async function decorate(container, data, query) {
 
             const iframeWindow = frame.contentWindow;
             iframeWindow.addEventListener('focus', () => {
-              console.log('iframe focused');
               iframeFocused = true;
               if (activeOverlayContent) {
                 activeOverlayContent.remove();
               }
             });
             iframeWindow.addEventListener('blur', () => {
-              console.log('iframe blurred');
               iframeFocused = false;
             });
 
