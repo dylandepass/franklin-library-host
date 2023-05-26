@@ -402,13 +402,12 @@ export async function decorate(container, data, query) {
                 }
               } else {
                 setTimeout(() => {
-                  console.log('active', document.activeElement?.tagName);
                   if (document.activeElement?.tagName !== 'SP-TEXTFIELD' || document.activeElement?.tagName === 'SIDEKICK-LIBRARY') {
                     if (activeOverlayContent) {
                       blockContainer.querySelector('generative-text-popover')?.remove();
                     }
                   }
-                }, 100);
+                }, 200);
               }
             });
           });
