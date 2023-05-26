@@ -371,38 +371,41 @@ export async function decorate(container, data, query) {
           [...blockClone.querySelectorAll('p, strong, a, h1, h2, h3, h4, h5, h6')].forEach((el) => {
             el.addEventListener('keydown', (e) => { if (e.keyCode === 13) e.preventDefault(); });
             el.addEventListener('focus', (e) => {
-              selectedElement = e.target;
-              const boundingRect = e.target.getBoundingClientRect();
+              if (localStorage.getItem('open-ai-key')) {
+                selectedElement = e.target;
+                const boundingRect = e.target.getBoundingClientRect();
 
-              activeOverlayContent = createTag('generative-text-popover', {});
-              activeOverlayContent.style.top = `${boundingRect.top + boundingRect.height + 63}px`;
-              activeOverlayContent.style.left = `${boundingRect.left + boundingRect.width + frame.getBoundingClientRect().left - 36}px`;
-              activeOverlayContent.style.position = 'absolute';
+                activeOverlayContent = createTag('generative-text-popover', {});
+                activeOverlayContent.style.top = `${boundingRect.top + boundingRect.height + 63}px`;
+                activeOverlayContent.style.left = `${boundingRect.left + boundingRect.width + frame.getBoundingClientRect().left - 36}px`;
+                activeOverlayContent.style.position = 'absolute';
 
-              activeOverlayContent.addEventListener('generated', (response) => {
-                activeOverlayContent.open = false;
-                selectedElement.innerHTML = response.detail.generated;
-                activeOverlayContent.remove();
-              });
+                activeOverlayContent.addEventListener('generated', (response) => {
+                  activeOverlayContent.open = false;
+                  selectedElement.innerHTML = response.detail.generated;
+                  activeOverlayContent.remove();
+                });
 
-              activeOverlayContent.addEventListener('error', (error) => {
-                activeOverlayContent.open = false;
-                container.dispatchEvent(new CustomEvent('Toast', { detail: { message: error.detail.message, variant: 'negative' } }));
-              });
+                activeOverlayContent.addEventListener('error', (error) => {
+                  activeOverlayContent.open = false;
+                  container.dispatchEvent(new CustomEvent('Toast', { detail: { message: error.detail.message, variant: 'negative' } }));
+                });
 
-              container.append(activeOverlayContent);
+                blockContainer.append(activeOverlayContent);
+              }
             });
 
             el.addEventListener('focusout', (e) => {
               if (e.relatedTarget) {
                 if (activeOverlayContent) {
-                  blockContainer.querySelector('generative-text-popover').remove();
+                  blockContainer.querySelector('generative-text-popover')?.remove();
                 }
               } else {
                 setTimeout(() => {
-                  if (document.activeElement?.tagName !== 'GENERATIVE-TEXT-POPOVER' || document.activeElement?.tagName === 'SIDEKICK-LIBRARY') {
+                  console.log('active', document.activeElement?.tagName);
+                  if (document.activeElement?.tagName !== 'SP-TEXTFIELD' || document.activeElement?.tagName === 'SIDEKICK-LIBRARY') {
                     if (activeOverlayContent) {
-                      blockContainer.querySelector('generative-text-popover').remove();
+                      blockContainer.querySelector('generative-text-popover')?.remove();
                     }
                   }
                 }, 100);
