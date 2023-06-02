@@ -43,6 +43,8 @@ function renderScaffolding() {
         <div class="search">
           <sp-search></sp-search>
         </div>
+        <div class="list-container">
+        </div>
       </div>
       <div class="content">
       </div>
@@ -104,11 +106,11 @@ export async function decorate(container, data) {
   container.dispatchEvent(new CustomEvent('ShowLoader'));
 
   const content = createTag('div', { class: 'block-library' }, renderScaffolding());
-  const menu = content.querySelector('.menu');
+  const listContainer = content.querySelector('.list-container');
   let frameLoaded = false;
 
   const blockList = createTag('block-list');
-  menu.append(blockList);
+  listContainer.append(blockList);
 
   blockList.loadBlocks(data, container);
 

@@ -14,6 +14,16 @@ sp-split-view {
     height: 100%;
 }
 
+.menu {
+    height: 100%;
+    overflow-y: hidden;
+}
+
+.menu .list-container {
+    height: 100%;
+    overflow-y: auto;
+}
+
 .search {
     padding: 10px;
 }
