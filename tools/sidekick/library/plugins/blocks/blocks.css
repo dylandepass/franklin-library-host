@@ -44,9 +44,10 @@ sp-split-view {
     background-color: #fff;
     transition: 0.2s ease-in-out;
     width: 100%;
+    overflow: hidden;
 }
 
-.frame-view iframe {
+.frame-view block-renderer {
     border: 0;
     width: 100%;
     height: 100%;

@@ -10,7 +10,7 @@
  * governing permissions and limitations under the License.
  */
 
-/* eslint-disable consistent-return */
+/* eslint-disable consistent-return, no-param-reassign */
 
 import {
   createCopy,
@@ -61,18 +61,6 @@ export function getBlockName(block, includeVariants = true) {
 
 export function getTable(block, name, path) {
   const url = new URL(path);
-  block.querySelectorAll('img').forEach((img) => {
-    if (!img.src.includes('data:')) {
-      const srcSplit = img.src.split('/');
-      const mediaPath = srcSplit.pop();
-      img.src = `${url.origin}/${mediaPath}`;
-    }
-
-    const { width, height } = img;
-    const ratio = width > 200 ? 200 / width : 1;
-    img.width = width * ratio;
-    img.height = height * ratio;
-  });
 
   block.querySelectorAll('span.icon').forEach((icon) => {
     const classNames = icon.className.split(' ');
@@ -100,6 +88,7 @@ export function getTable(block, name, path) {
 
   const table = document.createElement('table');
   table.setAttribute('border', '1');
+  table.setAttribute('style', 'width:100%;margin-bottom:20px');
 
   const backgroundColor = getComputedStyle(document.documentElement)
     .getPropertyValue('--sk-table-bg-color') || '#ff8012';
@@ -111,18 +100,52 @@ export function getTable(block, name, path) {
   headerRow.append(createTag('td', { colspan: maxCols, style: `background-color: ${backgroundColor}; color: ${foregroundColor};  height:23px;` }, name));
   table.append(headerRow);
   rows.forEach((row) => {
+    const columns = [...row.children];
     const tr = document.createElement('tr');
-    [...row.children].forEach((col) => {
+    columns.forEach((col) => {
+      const columnWidthPercentage = (1 / columns.length) * 100;
       const td = document.createElement('td');
       if (row.children.length < maxCols) {
         td.setAttribute('colspan', maxCols);
+      } else {
+        td.setAttribute('style', `width: ${columnWidthPercentage}%`);
       }
+
+      col.querySelectorAll('img').forEach((img) => {
+        if (!img.src.includes('data:')) {
+          const srcSplit = img.src.split('/');
+          const mediaPath = srcSplit.pop();
+          img.src = `${url.origin}/${mediaPath}`;
+        }
+
+        const maxWidth = Math.min(295, (columnWidthPercentage / 100) * 540);
+        const originalWidth = img.width;
+        const originalHeight = img.height;
+
+        // Calculate the aspect ratio
+        const aspectRatio = originalWidth / originalHeight;
+
+        // Calculate the new width and height based on the maximum width
+        let newWidth = maxWidth;
+        let newHeight = newWidth / aspectRatio;
+
+        // Check if the new height exceeds the maximum height
+        if (newHeight > maxWidth) {
+          newHeight = maxWidth;
+          newWidth = newHeight * aspectRatio;
+        }
+
+        img.width = newWidth;
+        img.height = newHeight;
+      });
+
       td.innerHTML = col.innerHTML;
+
       tr.append(td);
     });
     table.append(tr);
   });
-  return table.outerHTML;
+  return `${table.outerHTML}<br>`;
 }
 
 export function getBlockTags(block) {
@@ -168,12 +191,11 @@ export function parseDescription(description) {
     : description;
 }
 
-export function copyBlock(element, name, path) {
-  const table = getTable(
-    element,
-    name,
-    path,
-  );
-  const blob = new Blob([table], { type: 'text/html' });
+export function copyBlock(block, sectionMetadata) {
+  const tables = [block];
+
+  if (sectionMetadata) tables.push(sectionMetadata);
+
+  const blob = new Blob(tables, { type: 'text/html' });
   createCopy(blob);
 }

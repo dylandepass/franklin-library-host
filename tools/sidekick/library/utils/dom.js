@@ -170,7 +170,7 @@ export function createSideNavItem(
   }
 
   if (actionIcon) {
-    childElements.push(createTag(actionIcon, { slot: 'action-icon', size: 'm' }));
+    childElements.push(createTag(actionIcon, { slot: 'action-icon' }));
   }
 
   const blockVariant = createTag('sp-sidenav-item', { label }, childElements);
