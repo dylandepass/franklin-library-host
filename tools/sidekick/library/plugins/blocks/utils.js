@@ -60,7 +60,8 @@ export function getBlockName(block, includeVariants = true) {
 }
 
 export function getTable(block, name, path) {
-  const url = new URL(path);
+  const { origin } = window.location;
+  const url = new URL(`${origin}${path}`);
 
   block.querySelectorAll('span.icon').forEach((icon) => {
     const classNames = icon.className.split(' ');
