@@ -171,6 +171,7 @@ export async function fetchBlock(path) {
     window.blocks = {};
   }
   if (!window.blocks[path]) {
+    console.log('fetching', `${path}.plain.html`);
     const resp = await fetch(`${path}.plain.html`);
     if (!resp.ok) return;
 
