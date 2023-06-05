@@ -95,6 +95,20 @@ export function capitalize(str) {
 }
 
 /**
+ * Is the provided string a path?
+ * @param {*} str The string to check
+ * @returns True if yes
+ */
+export function isPath(str) {
+  try {
+    const url = new URL(str);
+    return url.protocol === '' && url.hostname === '';
+  } catch (error) {
+    return true;
+  }
+}
+
+/**
  * Extracts the config from a block.
  * @param {Element} block The block element
  * @returns {object} The block config

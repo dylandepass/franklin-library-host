@@ -14,9 +14,8 @@
 
 import {
   createCopy,
-  createTag, getMetadata, readBlockConfig, toCamelCase,
+  createTag, readBlockConfig, toCamelCase, isPath,
 } from '../../utils/dom.js';
-import { isPath } from '../../utils/library.js';
 
 export function getLibraryMetadata(block) {
   const libraryMetadata = block.querySelector('.library-metadata');
