@@ -149,30 +149,11 @@ export function getTable(block, name, path) {
   return `${table.outerHTML}<br>`;
 }
 
-export function getBlockTags(block) {
-  const blockName = getAuthorName(block) || getBlockName(block);
-  if (block.nextElementSibling?.className !== 'library-metadata') {
-    return blockName;
-  }
-  const libraryMetadata = getMetadata(block.nextElementSibling);
-  return libraryMetadata?.searchtags?.text
-    ? `${libraryMetadata?.searchtags?.text} ${blockName}`
-    : blockName;
-}
-
-export function isMatchingBlock(pageBlock, query) {
-  const tagsString = getBlockTags(pageBlock);
-  if (!query || !tagsString) return false;
-  const searchTokens = query.split(' ');
-  return searchTokens.every(token => tagsString.toLowerCase().includes(token.toLowerCase()));
-}
-
 export async function fetchBlock(path) {
   if (!window.blocks) {
     window.blocks = {};
   }
   if (!window.blocks[path]) {
-    console.log('fetching', `${path}.plain.html`);
     const resp = await fetch(`${path}.plain.html`);
     if (!resp.ok) return;
 
