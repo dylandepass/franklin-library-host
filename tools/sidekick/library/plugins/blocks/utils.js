@@ -16,6 +16,7 @@ import {
   createCopy,
   createTag, getMetadata, readBlockConfig, toCamelCase,
 } from '../../utils/dom.js';
+import { isPath } from '../../utils/library.js';
 
 export function getLibraryMetadata(block) {
   const libraryMetadata = block.querySelector('.library-metadata');
@@ -60,8 +61,11 @@ export function getBlockName(block, includeVariants = true) {
 }
 
 export function getTable(block, name, path) {
-  const { origin } = window.location;
+  console.log('getTable', block, name, path);
+  const origin = isPath(path) ? window.location.origin : '';
+  console.log('origin', origin);
   const url = new URL(`${origin}${path}`);
+  console.log('url', url);
 
   block.querySelectorAll('span.icon').forEach((icon) => {
     const classNames = icon.className.split(' ');

@@ -106,6 +106,7 @@ export async function decorate(container, data) {
   container.dispatchEvent(new CustomEvent('ShowLoader'));
 
   const content = createTag('div', { class: 'block-library' }, renderScaffolding());
+  container.append(content);
   const listContainer = content.querySelector('.list-container');
   let frameLoaded = false;
 
@@ -241,7 +242,6 @@ export async function decorate(container, data) {
   });
 
   // Show blocks and hide loader
-  container.append(content);
   container.dispatchEvent(new CustomEvent('HideLoader'));
 }
 
