@@ -26,8 +26,6 @@ import {
 import {
   createTag,
 } from '../../utils/dom.js';
-import '../../components/block-list/block-list.js';
-import '../../components/block-renderer/block-renderer.js';
 
 /**
  * Renders the scaffolding for the block plugin
