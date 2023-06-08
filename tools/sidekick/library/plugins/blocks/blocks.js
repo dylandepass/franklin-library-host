@@ -161,6 +161,7 @@ export async function decorate(container, data) {
     }
 
     const blockRenderer = content.querySelector('block-renderer');
+
     blockRenderer.loadBlock(
       blockName,
       blockData,
@@ -173,7 +174,7 @@ export async function decorate(container, data) {
       const blockTable = getTable(
         blockRenderer.getBlockElement(),
         blockNameWithVariant,
-        blockData.path,
+        blockData.url,
       );
 
       // Does the block have section metadata?
@@ -184,7 +185,7 @@ export async function decorate(container, data) {
         sectionMetadataTable = getTable(
           sectionMetadata,
           'section-metadata',
-          blockData.path,
+          blockData.url,
         );
       }
 

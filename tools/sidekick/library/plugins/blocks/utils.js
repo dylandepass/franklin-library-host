@@ -14,7 +14,7 @@
 
 import {
   createCopy,
-  createTag, readBlockConfig, toCamelCase, isPath,
+  createTag, readBlockConfig, toCamelCase,
 } from '../../utils/dom.js';
 
 export function getLibraryMetadata(block) {
@@ -60,11 +60,7 @@ export function getBlockName(block, includeVariants = true) {
 }
 
 export function getTable(block, name, path) {
-  console.log('getTable', block, name, path);
-  const origin = isPath(path) ? window.location.origin : '';
-  console.log('origin', origin);
-  const url = new URL(`${origin}${path}`);
-  console.log('url', url);
+  const url = new URL(path);
 
   block.querySelectorAll('span.icon').forEach((icon) => {
     const classNames = icon.className.split(' ');
@@ -101,7 +97,7 @@ export function getTable(block, name, path) {
     .getPropertyValue('--sk-table-fg-color') || '#ffffff';
 
   const headerRow = document.createElement('tr');
-  headerRow.append(createTag('td', { colspan: maxCols, style: `background-color: ${backgroundColor}; color: ${foregroundColor};  height:23px;` }, name));
+  headerRow.append(createTag('td', { colspan: maxCols, style: `background-color: ${backgroundColor}; color: ${foregroundColor};` }, name));
   table.append(headerRow);
   rows.forEach((row) => {
     const columns = [...row.children];
@@ -149,7 +145,7 @@ export function getTable(block, name, path) {
     });
     table.append(tr);
   });
-  return `${table.outerHTML}<br>`;
+  return `${table.outerHTML}<br/>`;
 }
 
 export async function fetchBlock(path) {

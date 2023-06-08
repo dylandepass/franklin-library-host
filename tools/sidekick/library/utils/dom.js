@@ -198,7 +198,7 @@ export function createSideNavItem(
   return blockVariant;
 }
 
-export function nextTick() {
+export function nextTick(ms = 1) {
   // eslint-disable-next-line no-promise-executor-return
-  return new Promise(resolve => setTimeout(resolve, 1));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
