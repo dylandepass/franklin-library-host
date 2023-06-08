@@ -211,12 +211,12 @@ export async function decorate(container, data) {
   });
 
   blockList.addEventListener('CopyBlock', (e) => {
-    const { blockWrapper: wrapper, blockNameWithVariant: name, blockPath: path } = e.detail;
+    const { blockWrapper: wrapper, blockNameWithVariant: name, blockURL } = e.detail;
 
     const blockTable = getTable(
       wrapper.querySelector('div[class]'),
       name,
-      path,
+      blockURL,
     );
 
     // Does the block have section metadata?
@@ -227,7 +227,7 @@ export async function decorate(container, data) {
       sectionMetadataTable = getTable(
         sectionMetadata,
         'section-metadata',
-        path,
+        blockURL,
       );
     }
 
