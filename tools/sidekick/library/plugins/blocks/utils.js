@@ -88,7 +88,7 @@ export function getTable(block, name, path) {
 
   const table = document.createElement('table');
   table.setAttribute('border', '1');
-  table.setAttribute('style', 'width:100%;margin-bottom:20px');
+  table.setAttribute('style', 'width:100%;');
 
   const backgroundColor = getComputedStyle(document.documentElement)
     .getPropertyValue('--sk-table-bg-color') || '#ff8012';
