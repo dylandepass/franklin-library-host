@@ -170,8 +170,8 @@ export async function decorate(container, data) {
     );
 
     const copyButton = content.querySelector('.copy-button');
-    copyButton?.addEventListener('click', () => {
-      const blockTable = getTable(
+    copyButton?.addEventListener('click', async () => {
+      const blockTable = await getTable(
         blockRenderer.getBlockElement(),
         blockNameWithVariant,
         blockData.url,
@@ -182,7 +182,7 @@ export async function decorate(container, data) {
       const sectionMetadata = blockWrapper.querySelector('.section-metadata');
       if (sectionMetadata) {
       // Create a table for the section metadata
-        sectionMetadataTable = getTable(
+        sectionMetadataTable = await getTable(
           sectionMetadata,
           'section-metadata',
           blockData.url,
@@ -210,10 +210,10 @@ export async function decorate(container, data) {
     });
   });
 
-  blockList.addEventListener('CopyBlock', (e) => {
+  blockList.addEventListener('CopyBlock', async (e) => {
     const { blockWrapper: wrapper, blockNameWithVariant: name, blockURL } = e.detail;
 
-    const blockTable = getTable(
+    const blockTable = await getTable(
       wrapper.querySelector('div[class]'),
       name,
       blockURL,
@@ -224,7 +224,7 @@ export async function decorate(container, data) {
     const sectionMetadata = wrapper.querySelector('.section-metadata');
     if (sectionMetadata) {
       // Create a table for the section metadata
-      sectionMetadataTable = getTable(
+      sectionMetadataTable = await getTable(
         sectionMetadata,
         'section-metadata',
         blockURL,
