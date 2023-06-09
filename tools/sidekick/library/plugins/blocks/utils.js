@@ -14,7 +14,7 @@
 
 import {
   createCopy,
-  createTag, nextTick, readBlockConfig, toCamelCase,
+  createTag, readBlockConfig, toCamelCase,
 } from '../../utils/dom.js';
 
 export function getLibraryMetadata(block) {
@@ -59,9 +59,7 @@ export function getBlockName(block, includeVariants = true) {
   return classes.length > 0 ? `${name} (${classes.join(', ')})` : name;
 }
 
-export async function getTable(block, name, path) {
-  await nextTick(100);
-
+export function getTable(block, name, path) {
   const url = new URL(path);
 
   block.querySelectorAll('span.icon').forEach((icon) => {
