@@ -24,7 +24,7 @@ import {
   parseDescription,
 } from './utils.js';
 import {
-  createTag,
+  createTag, setURLParams,
 } from '../../utils/dom.js';
 
 /**
@@ -169,11 +169,7 @@ export async function decorate(container, data) {
     );
 
     // Append the path and index of the current block to the url params
-    const url = new URL(window.location.href);
-    url.searchParams.set('path', blockData.path);
-    url.searchParams.set('index', e.detail.index);
-    const { href } = url;
-    window.history.pushState({ path: href }, '', decodeURIComponent(href));
+    setURLParams([['path', blockData.path], ['index', e.detail.index]]);
 
     const copyButton = content.querySelector('.copy-button');
     copyButton?.addEventListener('click', () => {
