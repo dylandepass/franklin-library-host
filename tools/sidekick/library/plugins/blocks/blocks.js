@@ -168,6 +168,13 @@ export async function decorate(container, data) {
       container,
     );
 
+    // Append the path and index of the current block to the url params
+    const url = new URL(window.location.href);
+    url.searchParams.set('path', blockData.path);
+    url.searchParams.set('index', e.detail.index);
+    const { href } = url;
+    window.history.pushState({ path: href }, '', decodeURIComponent(href));
+
     const copyButton = content.querySelector('.copy-button');
     copyButton?.addEventListener('click', () => {
       const copyElement = blockRenderer.getBlockElement();
