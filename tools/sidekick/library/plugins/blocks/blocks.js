@@ -99,18 +99,12 @@ function renderFrameSplitContainer() {
 }
 
 function copyBlockToClipboard(wrapper, name, blockURL) {
-  // Get the first block element ignoring any section metadata blocks
-  const element = wrapper.querySelector(':scope > div:not(.section-metadata)');
-  let blockTable = '';
-
-  // If the wrapper has no block, leave block table empty
-  if (element) {
-    blockTable = getTable(
-      element,
-      name,
-      blockURL,
-    );
-  }
+  const element = wrapper.querySelector('div[class]');
+  const blockTable = getTable(
+    element,
+    name,
+    blockURL,
+  );
 
   // Does the block have section metadata?
   let sectionMetadataTable;
