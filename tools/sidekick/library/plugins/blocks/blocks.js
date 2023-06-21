@@ -105,9 +105,6 @@ function copyBlockToClipboard(wrapper, name, blockURL) {
 
   // If the wrapper has no block, leave block table empty
   if (element) {
-    // Remove the sidekick library class from the block before copying
-    element.classList.remove('sidekick-library');
-
     blockTable = getTable(
       element,
       name,
@@ -122,7 +119,7 @@ function copyBlockToClipboard(wrapper, name, blockURL) {
   // Create a table for the section metadata
     sectionMetadataTable = getTable(
       sectionMetadata,
-      'section-metadata',
+      'Section metadata',
       blockURL,
     );
   }
