@@ -256,6 +256,9 @@ export async function decorate(container, data) {
       const copyElement = blockRenderer.getBlockElement();
       const copyWrapper = blockRenderer.getBlockWrapper();
       const copyBlockData = blockRenderer.getBlockData();
+
+      // Return the copied DOM in the toast message so it can be tested
+      // Cannot read or write clipboard in tests
       let copiedDOM;
 
       // Are we trying to copy a block or default content?
@@ -267,10 +270,7 @@ export async function decorate(container, data) {
           copyBlockData.url,
         );
       } else {
-        console.log('data', copyBlockData);
-        console.log('copy default content', copyWrapper);
         copiedDOM = copyDefaultContentToClipboard(copyWrapper, copyBlockData.url);
-        console.log('copied default content', copiedDOM);
       }
 
       container.dispatchEvent(new CustomEvent('Toast', { detail: { message: 'Copied Block', target: copiedDOM } }));
