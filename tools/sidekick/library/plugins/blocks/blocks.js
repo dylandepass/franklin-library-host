@@ -28,6 +28,7 @@ import {
   createTag, removeAllEventListeners, setURLParams,
 } from '../../utils/dom.js';
 import { sampleRUM } from '../../utils/rum.js';
+import { fetchCompletion } from '../../utils/openai.js';
 
 /**
  * Renders the scaffolding for the block plugin
@@ -91,15 +92,18 @@ function renderFrame(container) {
             <block-renderer></block-renderer>
           </div>
         </div>
-        <div class="details-container">
-          <div class="action-bar">
-            <h3 class="title"></h3>
-            <div class="actions">
-                <sp-button class="copy-button">Copy</sp-button>
+        <div class="bottom-container">
+          <generative-text-popover></generative-text-popover>
+          <div class="details-container">
+            <div class="action-bar">
+              <h3 class="title"></h3>
+              <div class="actions">
+                  <sp-button class="copy-button">Copy</sp-button>
+              </div>
             </div>
+            <sp-divider size="s"></sp-divider>
+            <div class="details"></div>
           </div>
-          <sp-divider size="s"></sp-divider>
-          <div class="details"></div>
         </div>
       </sp-split-view>
     `;
@@ -122,6 +126,19 @@ function renderFrame(container) {
     const desktopViewButton = removeAllEventListeners(container.querySelector('sp-action-button[value="desktop"]'));
     desktopViewButton?.addEventListener('click', () => {
       frameView.style.width = '100%';
+    });
+
+    const generativeTextPopover = contentContainer.querySelector('generative-text-popover');
+    generativeTextPopover.addEventListener('generate', async (e) => {
+      const renderer = container.querySelector('block-renderer');
+      const res = await fetchCompletion(`${e.detail.generate}. Put the response in the following structure {${renderer.blockWrapperClone.outerHTML}}, make sure to change all text to be something relavent.`);
+      renderer.loadBlock(
+        renderer.blockName,
+        renderer.blockData,
+        createTag('div', {}, res).querySelector(':first-child'),
+        renderer.defaultLibraryMetadata,
+        container,
+      );
     });
   }
 }

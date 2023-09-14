@@ -34,19 +34,25 @@ sp-split-view {
     width: 100%;
 }
 
-.details-container {
+.bottom-container {
+    position: relative;
+    display: table;
+    background-color: var(--spectrum-global-color-gray-75);
+}
+
+.bottom-container .details-container {
     width: auto;
     display: flex;
     flex-direction: column;
     background-color: var(--spectrum-global-color-gray-75);
 }
 
-.details-container .details {
+.bottom-container .details-container .details {
     height: 100%;
     padding: 0 16px 0 16px;
 }
 
-.details-container .actions {
+.bottom-container .details-container .actions {
     display: flex;
     justify-content: flex-end;
 }
