@@ -15,7 +15,7 @@ export async function fetchCompletion(prompt) {
 
   const requestBody = {
     model: 'gpt-4',
-    temperature: 0.7, // Controls the randomness of the generated text
+    temperature: 0.2, // Controls the randomness of the generated text
     n: 1, // Number of completions to generate
     frequency_penalty: 0,
     presence_penalty: 0,
