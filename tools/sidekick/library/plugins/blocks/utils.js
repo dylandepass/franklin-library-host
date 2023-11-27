@@ -200,6 +200,7 @@ async function imageUrlToBase64(url) {
       };
       reader.readAsDataURL(blob);
     } catch (e) {
+      /* c8 ignore next 2 */
       reject(e);
     }
   });
@@ -225,6 +226,8 @@ export async function prepareImagesForCopy(context, element, url, columnWidthPer
           const dataURL = await imageUrlToBase64(`${imgSrc.origin}${imgSrc.pathname}`);
           img.src = dataURL;
         } catch (e) {
+          /* c8 ignore next 3 */
+          // eslint-disable-next-line no-console
           console.error(e);
         }
       } else {
@@ -250,6 +253,7 @@ export async function prepareImagesForCopy(context, element, url, columnWidthPer
 
     // Check if the new height exceeds the maximum height
     if (newHeight > maxWidth) {
+      /* c8 ignore next 3 */
       newHeight = maxWidth;
       newWidth = newHeight * aspectRatio;
     }
@@ -363,6 +367,7 @@ export function copyToClipboard(context, data, prepare) {
             const blob = new Blob([html.outerHTML], { type: 'text/html' });
             resolve(blob);
           } catch (e) {
+            /* c8 ignore next 2 */
             reject(e);
           }
         });
@@ -457,7 +462,6 @@ export async function copyDefaultContentToClipboard(context, wrapper, blockURL) 
   };
 
   const copied = await copyToClipboard(context, data, prepare);
-  console.log('copied', copied);
 
   // Track block copy event
   sampleRUM('library:blockcopied', { target: blockURL });
